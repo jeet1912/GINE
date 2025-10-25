@@ -12,14 +12,6 @@ Verify the theoretical guarantees that
 
 ### **1. Node-Level Equivariance (Cora)**
 
-**Proof sketch.**
-Good catch — GitHub-flavored Markdown doesn’t render LaTeX like `\tilde{A}` unless you’re inside a math block.
-Here’s a fixed version that renders cleanly everywhere (using plain Markdown and Unicode where possible):
-
----
-
-### **1. Node-Level Equivariance (Cora)**
-
 **Proof sketch**
 
 A GCN layer propagates as
@@ -52,8 +44,8 @@ Thus,
 **Empirical test.**
 For 3 random permutations P on Cora:
 
-✅ `out_perm == out[perm]` (global check)
-✅ Per-split (train/val/test) logits identical after mapping back with `inv_perm`.
+`out_perm == out[perm]` (global check)
+Per-split (train/val/test) logits identical after mapping back with `inv_perm`.
 
 **Result:**
 `Node equivariance test (global + per split) passed!`
@@ -74,7 +66,7 @@ Permutation cancels because g ignores node order.
 **Empirical test.**
 After 3 random node permutations per graph:
 
-✅ `global_add_pool`, `global_mean_pool`, `global_max_pool` produce **identical graph embeddings** within 1e-6.
+`global_add_pool`, `global_mean_pool`, `global_max_pool` produce **identical graph embeddings** within 1e-6.
 
 ---
 
@@ -98,9 +90,9 @@ Index-based readouts depend on node ordering → not symmetric.
 
 | Pool g(h) | Invariant? | Strengths                                              | Limitations               |
 | --------- | ---------- | ------------------------------------------------------ | ------------------------- |
-| **Sum**   | ✅          | Captures total magnitude; good when graph size matters | Sensitive to # nodes      |
-| **Mean**  | ✅          | Size-normalized; default for variable-size graphs      | May dilute rare signals   |
-| **Max**   | ✅          | Detects presence of strong local features              | Ignores frequency, sparse |
+| **Sum**   | Yes          | Captures total magnitude; good when graph size matters | Sensitive to # nodes      |
+| **Mean**  | Yes          | Size-normalized; default for variable-size graphs      | May dilute rare signals   |
+| **Max**   | Yes          | Detects presence of strong local features              | Ignores frequency, sparse |
 
 ---
 
@@ -110,7 +102,7 @@ Index-based readouts depend on node ordering → not symmetric.
 
 ---
 
-✅ **Conclusion:**
+**Conclusion:**
 Empirical results match the theory—GCN layers are **node-equivariant**, and symmetric readouts (sum/mean/max) yield **graph-level invariance**, while index-based readouts fail by design.
 
 ---
