@@ -12,9 +12,9 @@ def permute_graph(x, edge_index, mask=None, batch=None):
     """Permute node order in a graph."""
     n = x.size(0)
     perm = torch.randperm(n)
-    print('perm ',perm)
+    #print('perm ',perm)
     x_perm = x[perm]
-    # Compute inverse permutation to map old indices -> new indices
+    # inverse permutation to map old indices -> new indices
     # perm maps new_pos -> old_index (x_perm[i] = x[perm[i]]).
     # We need inv_perm such that inv_perm[old_index] = new_pos.
     inv_perm = perm.argsort()
@@ -36,10 +36,12 @@ def test_equivariance_node():
 
     # Initialize model
     model = GCN(dataset.num_features, 16, dataset.num_classes)
+    # model.eval() to disable dropout/bn randomness; equivariance requires determinism
     model.eval()
 
-    # Compute original logits
+    # Compute original logits in original node order
     with torch.no_grad():
+        # f(X, A) in original node order
         out = model(x, edge_index)
 
     masks = {'train': train_mask, 'val': val_mask, 'test': test_mask}
@@ -49,25 +51,29 @@ def test_equivariance_node():
         # Permute graph (we only need 'perm' to remap outputs;
         # masks themselves don't need to be permuted for this check)
         x_perm, edge_index_perm, _, _, perm = permute_graph(x, edge_index, None)
+        # x_perm = P X, edge_index_perm corresponds to P A P^T (via index relabeling)
 
         with torch.no_grad():
+            # Output in new node order
             out_perm = model(x_perm, edge_index_perm)
 
-        # ---- Global equivariance: f(PX, PAP^T) == P f(X, A)
+        # ---- Global equivariance: f(PX, PAP^T) == P f(X, A); 
+        # In code, left-multiplying by P is just row reindexing: out[perm]
         assert torch.allclose(out_perm, out[perm], atol=1e-6), "Node equivariance failed (global check)."
 
         # ---- Per-split equivariance
-        # inv_perm maps old_index -> new_index
+        # inv_perm maps old_index -> new_index (positions after permutation)
+        # So out[idx_old] should equal out_perm[idx_new] for the same physical nodes.
         inv_perm = perm.argsort()
 
         for split_name, mask in masks.items():
             idx_old = mask.nonzero(as_tuple=False).view(-1)
             if idx_old.numel() == 0:
                 continue
-            # Where did those same nodes go in the permuted graph?
+            # new indexes in permuted graph
             idx_new = inv_perm[idx_old]
 
-            # Compare logits of the same physical nodes before/after permutation
+            # Comparing logits of the same physical nodes before/after permutation
             ok = torch.allclose(out[idx_old], out_perm[idx_new], atol=1e-6)
             assert ok, f"Node equivariance failed on '{split_name}' split."
 
@@ -82,7 +88,7 @@ def test_invariance_graph():
     x, edge_index, batch = data.x, data.edge_index, data.batch
 
     # Initialize model (output dimension set to 16 for graph embeddings)
-    model = GCN(dataset.num_features, 16, 16)
+    model = GCN(dataset.num_features, 16, dataset.num_classes)
     model.eval()
 
     # Define pooling functions
@@ -117,8 +123,9 @@ def test_invariance_graph():
             print("Counterexample: Taking embedding of node 0 is not permutation-invariant.")
 
 def main():
-    #test_equivariance_node()
+    test_equivariance_node()
     test_invariance_graph()
+
 
 if __name__ == "__main__":
     main()
