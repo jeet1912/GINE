@@ -106,7 +106,7 @@ Index-based readouts depend on node ordering → not symmetric.
 
 ### **5. Results Screenshot**
 
-![Tests output](/Users/sv.xxt/Desktop/tests.png)
+![Tests output](https://raw.githubusercontent.com/jeet1912/GINE/main/tests.png)
 
 ---
 
