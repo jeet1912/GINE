@@ -90,7 +90,10 @@ def test_invariance_graph():
       3) Randomly permuting node order (features + edges + batch ids)
       4) Verifying pooled graph embeddings do not change
 
-    Also shows a counterexample: taking "node 0" embedding is NOT invariant.
+    Also show a counterexample: taking "node 0" embedding is NOT invariant.
+    
+    Also note: adding any MLP after a symmetric pooling remains invariant (composition preserves invariance),
+    because MLP acts on the pooled graph vector, not on node order.
     """
     # Load MUTAG (TUDataset packs multiple graphs with a 'batch' vector)
     dataset = TUDataset(root='./data', name='MUTAG')
@@ -110,6 +113,11 @@ def test_invariance_graph():
         'mean': global_mean_pool,
         'max':  global_max_pool,
     }
+
+    # Brief comparison
+    # SUM  : keeps total magnitude; sensitive to graph size; good when count/frequency matters.
+    # MEAN : size-agnostic summary; good default when graphs vary in node count.
+    # MAX  : detects presence of strong local patterns; sparse signal, ignores frequency.
 
     # Baseline (original order): compute node embeddings and pooled graph embeddings
     with torch.no_grad():
@@ -147,6 +155,7 @@ def test_invariance_graph():
         # We EXPECT mismatch -> this demonstrates non-invariance of index-based readouts.
         if not torch.allclose(non_invariant, non_invariant_perm, atol=1e-6, rtol=1e-6):
             print("Counterexample: Selecting node[0] is NOT permutation-invariant (as expected).")
+    
 
 def main():
     test_equivariance_node()
